@@ -1,0 +1,11 @@
+import type {NextFunction,Response} from "express";
+import jwt from "jsonwebtoken";
+import type {AuthRequest,SafeUser} from "../types/auth.js";
+import {config} from "../config.js";
+import {prisma} from "../prisma.js";
+import {AppError} from "./errorHandler.js";
+export function requireAuth(req:AuthRequest,_res:Response,next:NextFunction){const header=req.get("authorization");const token=header?.startsWith("Bearer ")?header.slice(7):undefined;if(!token)return next(new AppError(401,"UNAUTHENTICATED","A valid access token is required"));try{const p=jwt.verify(token,config.jwtAccessSecret) as {sub:string;email:string;name:string;role:SafeUser["role"];type:string};if(p.type!=="access"||!p.sub)throw new Error();req.user={id:p.sub,email:p.email,name:p.name,role:p.role};next();}catch{next(new AppError(401,"INVALID_ACCESS_TOKEN","Access token is invalid or expired"));}}
+export function requireFreshUser(req:AuthRequest,_res:Response,next:NextFunction){if(!req.user)return next(new AppError(401,"UNAUTHENTICATED","Authentication is required"));prisma.user.findUnique({where:{id:req.user.id},select:{id:true,email:true,name:true,role:true,isActive:true}}).then(user=>{if(!user||!user.isActive)return next(new AppError(401,"INACTIVE_USER","Authentication is no longer valid"));req.user=user;next();}).catch(next);}
+export function requireRole(...roles:SafeUser["role"][]){return(req:AuthRequest,_res:Response,next:NextFunction)=>{if(!req.user)return next(new AppError(401,"UNAUTHENTICATED","Authentication is required"));if(!roles.includes(req.user.role))return next(new AppError(403,"FORBIDDEN","You are not authorized for this resource"));next();};}
+export function assertOwnership(ownerId:string,actorId:string){if(ownerId!==actorId)throw new AppError(403,"FORBIDDEN","You do not own this resource");}
+export function requireOwnership(loadOwner:(req:AuthRequest)=>Promise<string|null>){return async(req:AuthRequest,_res:Response,next:NextFunction)=>{try{if(!req.user)return next(new AppError(401,"UNAUTHENTICATED","Authentication is required"));const ownerId=await loadOwner(req);if(!ownerId)return next(new AppError(404,"NOT_FOUND","Resource not found"));assertOwnership(ownerId,req.user.id);next();}catch(error){next(error);}};}
