@@ -1,0 +1,8 @@
+import {prisma} from "../prisma.js";
+import {AppError} from "../middleware/errorHandler.js";
+import {assertOwnership} from "../middleware/auth.js";
+export async function companyIdForUser(userId:string){const company=await prisma.company.findUnique({where:{userId},select:{id:true}});if(!company)throw new AppError(403,"COMPANY_PROFILE_REQUIRED","Company profile is required");return company.id;}
+export async function studentIdForUser(userId:string){const student=await prisma.student.findUnique({where:{userId},select:{id:true}});if(!student)throw new AppError(403,"STUDENT_PROFILE_REQUIRED","Student profile is required");return student.id;}
+export async function assertInternshipCompany(internshipId:string,userId:string){const companyId=await companyIdForUser(userId);const item=await prisma.internship.findUnique({where:{id:internshipId},select:{companyId:true}});if(!item)throw new AppError(404,"NOT_FOUND","Internship not found");assertOwnership(item.companyId,companyId);return item;}
+export async function assertApplicationStudent(applicationId:string,userId:string){const studentId=await studentIdForUser(userId);const item=await prisma.application.findUnique({where:{id:applicationId},select:{studentId:true}});if(!item)throw new AppError(404,"NOT_FOUND","Application not found");assertOwnership(item.studentId,studentId);return item;}
+export async function assertApplicationCompany(applicationId:string,userId:string){const companyId=await companyIdForUser(userId);const item=await prisma.application.findUnique({where:{id:applicationId},select:{internship:{select:{companyId:true}}}});if(!item)throw new AppError(404,"NOT_FOUND","Application not found");assertOwnership(item.internship.companyId,companyId);return item;}
