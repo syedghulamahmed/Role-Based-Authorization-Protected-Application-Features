@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum UserRole { STUDENT COMPANY ADMIN }
+enum ApplicationStatus { APPLIED REVIEWING ACCEPTED REJECTED WITHDRAWN }
+model User {
+  id String @id @default(uuid())
+  email String @unique @db.VarChar(180)
+  passwordHash String @db.VarChar(255)
+  role UserRole
+  name String @db.VarChar(120)
+  isActive Boolean @default(true)
+  student Student?
+  company Company?
+  internships Internship[]
+  applications Application[]
+  refreshTokens RefreshToken[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([role, isActive])
+}
+model Student {
+  id String @id @default(uuid())
+  userId String @unique
+  university String @db.VarChar(160)
+  graduationYear Int
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  applications Application[]
+}
+model Company {
+  id String @id @default(uuid())
+  userId String @unique
+  companyName String @db.VarChar(160)
+  website String? @db.VarChar(255)
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+}
+model Internship {
+  id String @id @default(uuid())
+  companyId String
+  title String @db.VarChar(160)
+  description String @db.Text
+  location String @db.VarChar(160)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  applications Application[]
+  @@index([companyId, isActive])
+}
+model Application {
+  id String @id @default(uuid())
+  internshipId String
+  studentId String
+  status ApplicationStatus @default(APPLIED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  internship Internship @relation(fields:[internshipId],references:[id],onDelete:Cascade)
+  student Student @relation(fields:[studentId],references:[id],onDelete:Cascade)
+  @@unique([studentId, internshipId])
+  @@index([studentId, status])
+  @@index([internshipId, status])
+}
+model RefreshToken {
+  id String @id @default(uuid())
+  userId String
+  tokenHash String @unique @db.Char(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  @@index([userId,revokedAt])
+  @@index([expiresAt])
+}
