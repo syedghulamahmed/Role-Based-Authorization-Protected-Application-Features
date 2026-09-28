@@ -1,0 +1,13 @@
+import {Router} from "express";
+import {authRouter} from "./authRoutes.js";
+import {internshipRouter} from "./internshipRoutes.js";
+import {applicationRouter} from "./applicationRoutes.js";
+import {adminRouter} from "./adminRoutes.js";
+import {requireAuth,requireFreshUser} from "../middleware/auth.js";
+import type {AuthRequest} from "../types/auth.js";
+export const apiRouter=Router();
+apiRouter.use("/auth",authRouter);
+apiRouter.get("/me",requireAuth,requireFreshUser,(req:AuthRequest,res)=>res.json({user:req.user}));
+apiRouter.use("/internships",internshipRouter);
+apiRouter.use("/applications",applicationRouter);
+apiRouter.use("/admin",adminRouter);
