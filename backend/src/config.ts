@@ -1,0 +1,3 @@
+import "dotenv/config";
+function required(name:string){const value=process.env[name];if(!value)throw new Error(`Missing required environment variable: ${name}`);return value;}
+export const config={port:Number(process.env.PORT??4000),corsOrigin:process.env.CORS_ORIGIN??"http://localhost:5173",jwtAccessSecret:required("JWT_ACCESS_SECRET"),jwtAccessExpiresIn:process.env.JWT_ACCESS_EXPIRES_IN??"15m",refreshTokenDays:Number(process.env.REFRESH_TOKEN_DAYS??7),isProduction:process.env.NODE_ENV==="production"};
