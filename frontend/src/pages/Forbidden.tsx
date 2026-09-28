@@ -1,0 +1,1 @@
+export function Forbidden(){return <main className="shell"><section className="card"><span className="badge danger">403</span><h1>Not authorized</h1><p>Your account is authenticated, but it does not have permission to access this feature.</p><a href="/dashboard">Return to dashboard</a></section></main>}
