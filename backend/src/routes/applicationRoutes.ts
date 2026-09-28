@@ -1,0 +1,12 @@
+import {Router} from "express";
+import {z} from "zod";
+import {prisma} from "../prisma.js";
+import {requireAuth,requireFreshUser,requireRole} from "../middleware/auth.js";
+import type {AuthRequest} from "../types/auth.js";
+import {assertApplicationCompany,assertApplicationStudent,studentIdForUser} from "../services/authorizationService.js";
+const router=Router();router.use(requireAuth,requireFreshUser);
+router.get("/",async(req:AuthRequest,res)=>{const where=req.user!.role==="STUDENT"?{student:{userId:req.user!.id}}:req.user!.role==="COMPANY"?{internship:{company:{userId:req.user!.id}}}:{};res.json({items:await prisma.application.findMany({where,include:{internship:{include:{company:{select:{companyName:true}}}},student:{include:{user:{select:{name:true,email:true}}}}},orderBy:{createdAt:"desc"}})});});
+router.post("/",requireRole("STUDENT"),async(req:AuthRequest,res)=>{const input=z.object({internshipId:z.string().uuid()}).parse(req.body);const studentId=await studentIdForUser(req.user!.id);const internship=await prisma.internship.findUnique({where:{id:input.internshipId},select:{isActive:true}});if(!internship?.isActive)return res.status(404).json({error:{code:"NOT_FOUND",message:"Active internship not found"}});const item=await prisma.application.create({data:{internshipId:input.internshipId,studentId}});res.status(201).json({item});});
+router.patch("/:id/withdraw",requireRole("STUDENT","ADMIN"),async(req:AuthRequest,res)=>{const applicationId=z.string().uuid().parse(req.params.id);if(req.user!.role==="STUDENT")await assertApplicationStudent(applicationId,req.user!.id);const item=await prisma.application.update({where:{id:applicationId},data:{status:"WITHDRAWN"}});res.json({item});});
+router.patch("/:id/status",requireRole("COMPANY","ADMIN"),async(req:AuthRequest,res)=>{const applicationId=z.string().uuid().parse(req.params.id);if(req.user!.role==="COMPANY")await assertApplicationCompany(applicationId,req.user!.id);const status=z.enum(["REVIEWING","ACCEPTED","REJECTED"]).parse(req.body.status);const item=await prisma.application.update({where:{id:applicationId},data:{status}});res.json({item});});
+export {router as applicationRouter};
