@@ -1,0 +1,16 @@
+import {Router} from "express";
+import {z} from "zod";
+import {prisma} from "../prisma.js";
+import {AppError} from "../middleware/errorHandler.js";
+import {requireAuth,requireFreshUser,requireRole} from "../middleware/auth.js";
+import type {AuthRequest} from "../types/auth.js";
+import {assertInternshipCompany,companyIdForUser} from "../services/authorizationService.js";
+const router=Router();
+const id=z.string().uuid();
+const body=z.object({title:z.string().min(2).max(160),description:z.string().min(10),location:z.string().min(2).max(160)});
+router.use(requireAuth,requireFreshUser);
+router.get("/",async(_req,res)=>res.json({items:await prisma.internship.findMany({where:{isActive:true},orderBy:{createdAt:"desc"},include:{company:{select:{companyName:true,website:true}}})}));
+router.post("/",requireRole("COMPANY","ADMIN"),async(req:AuthRequest,res)=>{const data=body.parse(req.body);const companyId=req.user!.role==="ADMIN"?req.body.companyId:await companyIdForUser(req.user!.id);if(!companyId)throw new AppError(422,"COMPANY_REQUIRED","companyId is required for admin creation");const item=await prisma.internship.create({data:{...data,companyId}});res.status(201).json({item});});
+router.patch("/:id",requireRole("COMPANY","ADMIN"),async(req:AuthRequest,res)=>{const internshipId=id.parse(req.params.id);if(req.user!.role!=="ADMIN")await assertInternshipCompany(internshipId,req.user!.id);const data=body.partial().parse(req.body);const item=await prisma.internship.update({where:{id:internshipId},data});res.json({item});});
+router.delete("/:id",requireRole("COMPANY","ADMIN"),async(req:AuthRequest,res)=>{const internshipId=id.parse(req.params.id);if(req.user!.role!=="ADMIN")await assertInternshipCompany(internshipId,req.user!.id);await prisma.internship.update({where:{id:internshipId},data:{isActive:false}});res.status(204).send();});
+export {router as internshipRouter};
