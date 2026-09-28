@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: TalentBridge Authorization API
+  version: 4.0.0
+  description: Backend-enforced RBAC and ownership authorization.
+servers:
+  - url: http://localhost:4000/api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: {type: string}
+            message: {type: string}
+          required: [code, message]
+  responses:
+    Unauthorized:
+      description: Missing, invalid, expired, or inactive authentication
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example:
+            error: {code: UNAUTHENTICATED, message: Authentication is required}
+    Forbidden:
+      description: Authenticated principal lacks the required role or ownership
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example:
+            error: {code: FORBIDDEN, message: You are not authorized for this resource}
+paths:
+  /internships:
+    get:
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {description: Active internships}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      security: [{bearerAuth: []}]
+      responses:
+        '201': {description: Internship created}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /internships/{id}:
+    patch:
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Internship updated}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    delete:
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204': {description: Internship deactivated}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /applications/{id}/withdraw:
+    patch:
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {description: Application withdrawn}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /applications/{id}/status:
+    patch:
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {description: Application status updated}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /admin/users:
+    get:
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {description: All users}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /admin/users/{id}/deactivate:
+    patch:
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {description: User deactivated}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
