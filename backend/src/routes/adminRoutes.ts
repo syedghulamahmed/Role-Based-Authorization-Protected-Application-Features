@@ -1,0 +1,10 @@
+import {Router} from "express";
+import {z} from "zod";
+import {prisma} from "../prisma.js";
+import {requireAuth,requireFreshUser,requireRole} from "../middleware/auth.js";
+const router=Router();router.use(requireAuth,requireFreshUser,requireRole("ADMIN"));
+router.get("/users",async(_req,res)=>res.json({items:await prisma.user.findMany({select:{id:true,email:true,name:true,role:true,isActive:true,createdAt:true},orderBy:{createdAt:"desc"}})}));
+router.get("/internships",async(_req,res)=>res.json({items:await prisma.internship.findMany({include:{company:{include:{user:{select:{name:true,email:true}}}}},orderBy:{createdAt:"desc"}})}));
+router.patch("/users/:id/deactivate",async(req,res)=>{const userId=z.string().uuid().parse(req.params.id);const user=await prisma.user.update({where:{id:userId},data:{isActive:false},select:{id:true,email:true,isActive:true}});res.json({user});});
+router.patch("/internships/:id/deactivate",async(req,res)=>{const internshipId=z.string().uuid().parse(req.params.id);const item=await prisma.internship.update({where:{id:internshipId},data:{isActive:false}});res.json({item});});
+export {router as adminRouter};
