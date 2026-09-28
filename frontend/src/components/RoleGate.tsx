@@ -1,0 +1,1 @@
+import type {ReactNode} from "react";import {useAuth} from "../auth/AuthContext";export function RoleGate({roles,children}:{roles:string[];children:ReactNode}){const{user}=useAuth();return user&&roles.includes(user.role)?<>{children}</>:null}
