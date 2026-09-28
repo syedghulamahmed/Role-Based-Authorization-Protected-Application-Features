@@ -1,0 +1,11 @@
+{
+  "info":{"name":"TalentBridge Authorization Boundary Tests","schema":"https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  "variable":[{"key":"baseUrl","value":"http://localhost:4000/api"},{"key":"companyToken","value":""},{"key":"studentToken","value":""},{"key":"adminToken","value":""},{"key":"otherInternshipId","value":""},{"key":"otherApplicationId","value":""}],
+  "item":[
+    {"name":"Company attempts another company's PATCH","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{companyToken}}"},{"key":"Content-Type","value":"application/json"}],"url":"{{baseUrl}}/internships/{{otherInternshipId}}","body":{"mode":"raw","raw":"{"title":"Unauthorized edit","description":"Should return 403","location":"Remote"}"}}},
+    {"name":"Student attempts another student's application withdrawal","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{studentToken}}"}],"url":"{{baseUrl}}/applications/{{otherApplicationId}}/withdraw"}},
+    {"name":"Company updates own posting application","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{companyToken}}","Content-Type":"application/json"}],"url":"{{baseUrl}}/applications/{{otherApplicationId}}/status","body":{"mode":"raw","raw":"{"status":"REVIEWING"}"}}},
+    {"name":"Admin lists all users","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"url":"{{baseUrl}}/admin/users"}},
+    {"name":"Admin deactivates a listing","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"url":"{{baseUrl}}/admin/internships/{{otherInternshipId}}/deactivate"}}
+  ]
+}
