@@ -1,5 +1,10 @@
 # TalentBridge — Role-Based Authorization & Protected Features
 
+## Integrated capstone
+
+This task is part of the broader [TalentBridge internship and placement platform](https://github.com/syedghulamahmed/Capstone), which consolidates the platform architecture and end-to-end workflow.
+
+
 Standalone NeuroFive Solutions authorization task. This repository layers backend-enforced RBAC and ownership authorization over authentication.
 
 ## Access-control matrix
